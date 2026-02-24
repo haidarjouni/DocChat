@@ -3,7 +3,7 @@ import os
 from pydoc import doc
 from src.config import MANIFEST_FILE, UPLOADS_DIR
 import hashlib
-
+from datetime import datetime
 def add_upload(filename, file_bytes):
      manifest = load_manifest() #load the manifest
      sha = hashlib.sha256(file_bytes).hexdigest() #create unique id using the file size
@@ -15,6 +15,7 @@ def add_upload(filename, file_bytes):
           "filename": filename, #store the filename with the doc_id to avoid conflicts
           "file_size": len(file_bytes), #store the file size
           "path": str(UPLOADS_DIR / saved_name), #store the path to the file
+          "uploaded_at": datetime.now().isoformat(), #store the upload time
           "chunk_count" : 0 #initialize chunk count to 0    
      }
      save_manifest(manifest) #save the manifest
@@ -31,7 +32,7 @@ def delete_doc(doc_id):
           os.remove(doc["path"]) #delete the file
      return True
 
-def list():
+def list_documents():
      manifest = load_manifest()
      results  = [] 
      for doc_id, doc in manifest["documents"].items(): #list of dicts with doc_id as key and doc as value
@@ -39,6 +40,7 @@ def list():
                "doc_id": doc_id,
                "filename": doc["filename"],
                "file_size": doc["file_size"],
+               "uploaded_at": doc["uploaded_at"],
           })
      return results 
 
