@@ -53,7 +53,7 @@ def update_doc(doc_id, updates_dict): #update a specific dict using an id
      save_manifest(manifest) #save changes
      return True 
 
-def get_path(doc_id): #get the path using the doc_id
+def get_path(doc_id)-> str | None: #get the path using the doc_id
      manifest = load_manifest()
      doc = manifest["documents"].get(doc_id)
      return doc["path"] if doc else None #return the path if not exists return none
@@ -79,3 +79,13 @@ def save_file(saved_name, file_bytes):
      with (UPLOADS_DIR / saved_name).open("wb") as f: #save the file to the uploads directory
           f.write(file_bytes) #write the file content
      return True
+
+def get_doc_name(doc_id):
+     manifest = load_manifest()
+     doc = manifest["documents"].get(doc_id)
+     return doc["filename"] if doc else None
+
+def get_chunk_count(doc_id):
+     manifest = load_manifest()
+     doc = manifest["documents"].get(doc_id)
+     return (doc["chunk_count"] > 0) if doc else None
