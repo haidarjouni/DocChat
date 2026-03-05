@@ -16,7 +16,10 @@ def add_upload(filename, file_bytes):
           "file_size": len(file_bytes), #store the file size
           "path": str(UPLOADS_DIR / saved_name), #store the path to the file
           "uploaded_at": datetime.now().isoformat(), #store the upload time
-          "chunk_count" : 0 #initialize chunk count to 0    
+          "chunk_count" : 0, #initialize chunk count to 0
+          "indexed_status": "never", #initialize indexed status to "never"
+          "last_index_attempt": None, #initialize last index attempt to None
+          "index_error": None, #initialize index error to None
      }
      save_manifest(manifest) #save the manifest
      return True
@@ -85,7 +88,11 @@ def get_doc_name(doc_id):
      doc = manifest["documents"].get(doc_id)
      return doc["filename"] if doc else None
 
-def get_chunk_count(doc_id):
+def get_doc(doc_id)-> dict | None:
+     manifest = load_manifest()
+     return manifest["documents"].get(doc_id) if manifest["documents"].get(doc_id) else None
+
+def get_chunk_count(doc_id) -> int:
      manifest = load_manifest()
      doc = manifest["documents"].get(doc_id)
-     return (doc["chunk_count"] > 0) if doc else None
+     return doc["chunk_count"] if doc else 0
