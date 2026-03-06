@@ -22,17 +22,17 @@ def add_upload(filename, file_bytes):
           "index_error": None, #initialize index error to None
      }
      save_manifest(manifest) #save the manifest
-     return True
+     return sha #return the doc_id
      
 def delete_doc(doc_id):
      manifest = load_manifest()
      doc = manifest["documents"].get(doc_id)
      if doc is None:
-          return False #check if the doc exists     
+          raise ValueError("Document not found.") #check if the doc exists 
+     if os.path.exists(doc["path"]):
+          os.remove(doc["path"]) #delete the file    
      del manifest["documents"][doc_id] #delete the doc from manifest
      save_manifest(manifest) #save the manifest
-     if os.path.exists(doc["path"]):
-          os.remove(doc["path"]) #delete the file
      return True
 
 def list_documents():

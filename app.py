@@ -1,7 +1,8 @@
 import streamlit as st
 from src import add_upload, delete_doc, list_documents, get_path
 from pypdf import PdfReader
-
+from src import index_pdf
+from src import chroma_delete_doc 
 st.set_page_config(page_title="DocChat Library", layout="wide")
 
 @st.dialog("Document Viewer")
@@ -26,27 +27,31 @@ def view(doc_id: str):
         )
 # --- Sidebar: upload only ---
 with st.sidebar:
-     st.title("Upload")
+    st.title("Upload")
 
-     if "uploader_key" not in st.session_state:
-          st.session_state.uploader_key = 0
+    if "uploader_key" not in st.session_state:
+        st.session_state.uploader_key = 0
 
-     uploaded_file = st.file_uploader(
-          "Choose a PDF",
-          type="pdf",
-          key=f"uploader_{st.session_state.uploader_key}",
-     )
+    uploaded_file = st.file_uploader(
+        "Choose a PDF",
+        type="pdf",
+        key=f"uploader_{st.session_state.uploader_key}",
+    )
 
-     if uploaded_file is not None:
-          file_bytes = uploaded_file.read()
-          filename = uploaded_file.name
-
-          if add_upload(filename, file_bytes):
-               st.success("Uploaded!")
-               st.session_state.uploader_key += 1  # resets uploader
-               st.rerun()
-          else:
-               st.warning("This file already exists.")
+    if uploaded_file is not None:
+        file_bytes = uploaded_file.read()
+        filename = uploaded_file.name
+        sha = add_upload(filename, file_bytes)
+        if sha:
+            success = index_pdf(sha)
+            if success:
+                st.success("Uploaded and indexed!")
+            else:
+                st.error("Indexing failed")
+            st.session_state.uploader_key += 1  # resets uploader
+            st.rerun()
+        else:
+            st.warning("This file already exists.")
 
 # --- Main: documents list ---
 st.title("Document Library")
@@ -87,9 +92,12 @@ else:
                     )
 
                     if delete_clicked:
-                        if delete_doc(doc["doc_id"]):
+                        try:
+                            chroma_delete_doc(doc["doc_id"])
+                            delete_doc(doc["doc_id"])
                             st.success("Deleted.")
                             st.rerun()
-                        else:
-                            st.error("Failed to delete.") 
-# ui mostly by gpt-4, with some tweaks by me. I added the file size and a preview of the first page in the viewer.
+                        except Exception as e:
+                            st.error(f"Failed to delete: {e}")
+                                           
+# ui is mostly by gpt-4, with some tweaks by me. I added the file size and a preview of the first page in the viewer.

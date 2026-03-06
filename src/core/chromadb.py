@@ -21,7 +21,7 @@ def delete_doc(doc_id):
      client = get_vectorStore()
      chunk_count = library.get_chunk_count(doc_id) #gets the counter
      if chunk_count == 0:
-          return #if no chunks indexed just return
+          return True #if no chunks indexed just return
      chunk_ids = [f"{doc_id}_chunk_{i}" for i in range(chunk_count)] # generate chunk ids in a list
      client.delete(ids=chunk_ids) #delete the chunks using the ids
-     
+     return True

@@ -8,9 +8,9 @@ def index_pdf(doc_id):
      manifest = library.load_manifest() #load the manifest
      document = manifest["documents"].get(doc_id) #get the document using the doc_id
      if document is None :
-          return #if the document doesn't exist or already indexed just return
+          return False #if the document doesn't exist or already indexed just return
      elif document.get("indexed_status") == "ok" and document.get("chunk_count", 0) > 0: #if already indexed do nothing
-          return
+          return False
      library.update_doc(doc_id, {
         "indexed_status": "indexing",
         "last_index_attempt": datetime.now().isoformat(),
@@ -33,7 +33,9 @@ def index_pdf(doc_id):
                "indexed_status": "failed",
                "index_error": str(e),
                "last_index_attempt": datetime.now().isoformat()
-          })     
+          })
+          return False  
+     return True   
      
 def load_pdf(doc_id, document):
      loader = PyPDFLoader(document.get("path")) #load the pdf using the path
