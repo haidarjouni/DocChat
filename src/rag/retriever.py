@@ -3,32 +3,39 @@ from ..core import chromadb
 # from .. import config
 # cohere_client = cohere.Client(config.COHERE_API_KEY)
 
-def query(query):
-     docs = retriever(query) #get the relevant chunks using the retriever
-     # docs = reranker(docs, query) rerank the chunks using the reranker
+def retriever_query(input: dict):
+     question = input.get("question")
+     doc_id = input.get("doc_id")
+     docs = retriever(question, doc_id=doc_id) #get the relevant chunks using the retriever
+     # docs = reranker(docs, question) rerank the chunks using the reranker
      return docs
 
-def retriever(query, k=5):
+def retriever(question, doc_id=None, k=3):
      client = chromadb.get_vectorStore() #get the vector store client
+     search_kwargs = {
+          "k": k
+     }
+     if doc_id:
+          search_kwargs["filter"] = {"doc_id": doc_id}
      retriever = client.as_retriever(
           search_type="similarity",     
-          search_kwargs={"k": k},
+          search_kwargs=search_kwargs
      )
      filtered_docs = []
-     docs = retriever.invoke(query)
+     docs = retriever.invoke(question)
      for doc in docs:
-          text = doc.page_content.lower()
+          text = doc.page_content.lower().strip()
           if text.startswith("questions") or text.startswith("exercise"):
                continue
           filtered_docs.append(doc)
           
      return  filtered_docs
 
-# def reranker(docs, query, k = 5):
+# def reranker(docs, question, k = 5):
 #      texts = [doc.page_content for doc in docs]
 #      reranked = cohere_client.rerank(
 #           model="rerank-v3.5",
-#           query=query,
+#           question=question,
 #           documents=texts,
 #           top_n=k
 #      )
