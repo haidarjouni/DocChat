@@ -14,7 +14,7 @@ prompt_builder_runnable = RunnableLambda(format_docs)
 
 chain = (
      {
-          "context": retriever_query_runnable | prompt_builder_runnable,
+          "context":  RunnableLambda(lambda x: x["context"]),
           "question": RunnableLambda(lambda x: x["question"])
      }
      | PROMPT
@@ -24,11 +24,20 @@ chain = (
 
 def ask(user_question, doc_id=None, chat_history=None):
      rewritten_question = prompt_rewrite(user_question, chat_history)
-     answer = chain.invoke({
+     docs = retriever_query({
           "question": rewritten_question,
           "doc_id": doc_id
      })
+     
+     context = format_docs(docs)
+     
+     answer = chain.invoke({
+          "context": context,
+          "question": rewritten_question    
+     })
+     
      return {
           "rewritten_question": rewritten_question,
-          "answer": answer
+          "answer": answer,
+          "docs": docs,        
      }
