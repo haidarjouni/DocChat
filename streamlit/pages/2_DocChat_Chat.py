@@ -1,5 +1,5 @@
 import streamlit as st
-from src import list_documents, ask
+from app import list_documents, ask
 
 st.set_page_config(
     page_title="DocChat ChatBot",

@@ -1,5 +1,5 @@
 from langchain_chroma import Chroma
-from src.config import CHROMA_DIR, EMBEDDING_MODEL
+from app.core.config import CHROMA_DIR, EMBEDDING_MODEL
 from langchain_ollama import OllamaEmbeddings
 from . import library
 

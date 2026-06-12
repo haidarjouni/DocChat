@@ -1,7 +1,7 @@
 import json
 import os
 from pydoc import doc
-from src.config import MANIFEST_FILE, UPLOADS_DIR
+from app.core.config import MANIFEST_FILE, UPLOADS_DIR
 import hashlib
 from datetime import datetime
 def add_upload(filename, file_bytes):

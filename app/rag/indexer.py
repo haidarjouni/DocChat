@@ -1,8 +1,8 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from src.config import CHUNK_OVERLAP, CHUNK_SIZE
-from . import library
-from . import chromadb
+from app.core.config import CHUNK_OVERLAP, CHUNK_SIZE
+from ..storage import library
+from ...src.core import chromadb
 from datetime import datetime
 def index_pdf(doc_id):
      manifest = library.load_manifest() #load the manifest

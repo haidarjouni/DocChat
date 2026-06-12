@@ -1,8 +1,8 @@
 import streamlit as st
-from src import add_upload, delete_doc, list_documents, get_path
+from app import add_upload, delete_doc, list_documents, get_path
 from pypdf import PdfReader
-from src import index_pdf
-from src import chroma_delete_doc 
+from app import index_pdf
+from app import chroma_delete_doc 
 st.set_page_config(
      page_title="DocChat Library",
      layout="wide"
