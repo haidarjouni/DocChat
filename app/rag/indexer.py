@@ -1,27 +1,27 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.core.config import CHUNK_OVERLAP, CHUNK_SIZE
+from app.core.exceptions import DocumentNotFoundError, DocumentAlreadyIndexedError, DocumentIndexingError
 from ..storage import library
-from ...src.core import chromadb
+from ..storage.vectorstore import delete_doc as delete_vectors, add_chunks
 from datetime import datetime
 def index_pdf(doc_id):
      manifest = library.load_manifest() #load the manifest
      document = manifest["documents"].get(doc_id) #get the document using the doc_id
      if document is None :
-          return False #if the document doesn't exist or already indexed just return
+          raise DocumentNotFoundError() #if the document doesn't exist or already indexed just return
      elif document.get("indexed_status") == "ok" and document.get("chunk_count", 0) > 0: #if already indexed do nothing
-          return False
+          raise DocumentAlreadyIndexedError()
      library.update_doc(doc_id, {
         "indexed_status": "indexing",
         "last_index_attempt": datetime.now().isoformat(),
         "index_error": None
      })
-     
-     pages = load_pdf(doc_id, document) #load the pdf using the doc_id
-     chunks = split_chunks(pages) #split it into chunks
-     try:         
-          chromadb.delete_doc(doc_id) #delete the old chunks if they exist
-          chromadb.add_chunks(chunks) # add the chunks to the vector store
+     try:    
+          pages = load_pdf(doc_id, document) #load the pdf using the doc_id
+          chunks = split_chunks(pages) #split it into chunks     
+          delete_vectors(doc_id) #delete the old chunks if they exist
+          add_chunks(chunks) # add the chunks to the vector store
           library.update_doc(doc_id, {
                "chunk_count": len(chunks),
                "indexed_status": "ok",
@@ -34,7 +34,7 @@ def index_pdf(doc_id):
                "index_error": str(e),
                "last_index_attempt": datetime.now().isoformat()
           })
-          return False  
+          raise DocumentIndexingError(str(e))
      return True   
      
 def load_pdf(doc_id, document):

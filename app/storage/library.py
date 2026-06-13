@@ -4,11 +4,12 @@ from pydoc import doc
 from app.core.config import MANIFEST_FILE, UPLOADS_DIR
 import hashlib
 from datetime import datetime
+from app.core.exceptions import DocumentNotFoundError, DuplicateDocumentError
 def add_upload(filename, file_bytes):
      manifest = load_manifest() #load the manifest
      sha = hashlib.sha256(file_bytes).hexdigest() #create unique id using the file size
      if sha in manifest["documents"]:
-          return False #check if the id already exists
+          raise DuplicateDocumentError() #check if the document already exists using the manifest
      saved_name= f"{sha}_{filename}" # create a unique name using the doc_id and original filename
      save_file(saved_name=saved_name, file_bytes=file_bytes) #save the file
      manifest["documents"][sha] = {
@@ -28,7 +29,7 @@ def delete_doc(doc_id):
      manifest = load_manifest()
      doc = manifest["documents"].get(doc_id)
      if doc is None:
-          raise ValueError("Document not found.") #check if the doc exists 
+          raise DocumentNotFoundError() #check if the doc exists 
      if os.path.exists(doc["path"]):
           os.remove(doc["path"]) #delete the file    
      del manifest["documents"][doc_id] #delete the doc from manifest
@@ -90,9 +91,16 @@ def get_doc_name(doc_id):
 
 def get_doc(doc_id)-> dict | None:
      manifest = load_manifest()
-     return manifest["documents"].get(doc_id) if manifest["documents"].get(doc_id) else None
+     doc =  manifest["documents"].get(doc_id)
+     if doc is None : 
+          raise DocumentNotFoundError()
+     return {
+          "doc_id": doc_id,
+          **doc
+     }
 
 def get_chunk_count(doc_id) -> int:
      manifest = load_manifest()
      doc = manifest["documents"].get(doc_id)
      return doc["chunk_count"] if doc else 0
+
