@@ -1,34 +1,30 @@
+import asyncio
+import httpx
 import streamlit as st
-from app import add_upload, delete_doc, list_documents, get_path
-from pypdf import PdfReader
-from app import index_pdf
-from app import chroma_delete_doc 
+from services.api_client import add_document, delete_document, fetch_documents, get_specific_document 
+
 st.set_page_config(
      page_title="DocChat Library",
      layout="wide"
 )
 
-
 @st.dialog("Document Viewer")
 def view(doc_id: str):
-    path = get_path(doc_id)
-    if not path:
-        st.error("Document not found.")
-        return
-
-    with open(path, "rb") as f:
-        reader = PdfReader(f)
-        pages = len(reader.pages)
-
-        st.caption(f"{pages} page(s)")
-        text = reader.pages[0].extract_text() or ""
-
-        st.text_area(
-            "Page 1 preview",
-            value=text[:2000],   # preview length (adjust)
-            height=300,
-            disabled=True,
-        )
+    try:
+        doc = asyncio.run(get_specific_document(doc_id))
+    except httpx.HTTPStatusError as e:
+        st.error(f"status {e.response.status_code}: {e.response.text}")
+        st.stop()
+    except Exception as e:
+        st.error(f"Failed to fetch document: {e}")
+        st.stop()
+    st.caption(f"{doc["pages"]} page(s)")
+    st.text_area(
+        "Page 1 preview",
+        value=doc["text"],   # preview length (adjust)
+        height=300,
+        disabled=True,
+    )
 # --- Sidebar: upload only ---
 with st.sidebar:
     st.title("Upload")
@@ -45,22 +41,20 @@ with st.sidebar:
     if uploaded_file is not None:
         file_bytes = uploaded_file.read()
         filename = uploaded_file.name
-        sha = add_upload(filename, file_bytes)
-        if sha:
-            success = index_pdf(sha)
-            if success:
-                st.success("Uploaded and indexed!")
-            else:
-                st.error("Indexing failed")
-            st.session_state.uploader_key += 1  # resets uploader
+        try:
+            result = asyncio.run(add_document(filename, file_bytes))
+            st.success("Uploaded and indexed!")
+            st.session_state.uploader_key += 1
             st.rerun()
-        else:
-            st.warning("This file already exists.")
-
+        except httpx.HTTPStatusError as e:
+            st.error(f"status {e.response.status_code}: {e.response.text}")
+        except Exception as e:
+            st.error(f"Upload failed: {e}")
+            
 # --- Main: documents list ---
 st.title("Document Library")
 
-docs = list_documents()
+docs = asyncio.run(fetch_documents())
 docs = sorted(docs, key=lambda x: x["uploaded_at"], reverse=True)  # sort by upload time, newest first
 
 if not docs:
@@ -97,11 +91,10 @@ else:
 
                     if delete_clicked:
                         try:
-                            chroma_delete_doc(doc["doc_id"])
-                            delete_doc(doc["doc_id"])
+                            asyncio.run(delete_document(doc["doc_id"]))
                             st.success("Deleted.")
                             st.rerun()
+                        except httpx.HTTPStatusError as e:
+                            st.error(f"status {e.response.status_code}: {e.response.text}")
                         except Exception as e:
                             st.error(f"Failed to delete: {e}")
-                                           
-# ui is mostly by gpt-4, with some tweaks by me. I added the file size and a preview of the first page in the viewer.

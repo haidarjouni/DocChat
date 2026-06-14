@@ -22,16 +22,16 @@ chain = (
      | StrOutputParser()
 )
 
-def ask(user_question, doc_id=None, chat_history=None):
+async def ask(user_question, doc_id=None, chat_history=None):
      rewritten_question = prompt_rewrite(user_question, chat_history)
-     docs = retriever_query({
+     docs = await retriever_query({
           "question": rewritten_question,
           "doc_id": doc_id
      })
      
      context = format_docs(docs)
      
-     answer = chain.invoke({
+     answer = await chain.ainvoke({
           "context": context,
           "question": rewritten_question    
      })

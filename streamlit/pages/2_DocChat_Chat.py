@@ -1,12 +1,11 @@
 import streamlit as st
-from app import list_documents, ask
-
+import asyncio
+from services.api_client import fetch_documents, send_message
 st.set_page_config(
     page_title="DocChat ChatBot",
     page_icon="💬",
     layout="wide",
 )
-
 
 @st.dialog("Debug")
 def popup(question, retrieved_chunks):
@@ -21,11 +20,11 @@ def popup(question, retrieved_chunks):
     st.write("**Retrieved chunks:**")
 
     for i, doc in enumerate(retrieved_chunks, start=1):
-        filename = doc.metadata.get("filename", "Unknown file")
-        page = doc.metadata.get("page", "Unknown page")
+        filename = doc.get("filename", "Unknown file")
+        page = doc.get("page", "Unknown page")
 
         with st.expander(f"Chunk {i} — {filename} — page {page}"):
-            st.write(doc.page_content[:500])
+            st.write(doc.get("content", "")[:500])
 
 
 st.title("DocChat")
@@ -33,8 +32,12 @@ st.caption("Ask questions about your uploaded documents.")
 
 if "history" not in st.session_state:
     st.session_state.history = []
+try:
+    all_docs = asyncio.run(fetch_documents())
+except Exception as e:
+    st.error(f"Error occurred while fetching documents: {e}")
+    all_docs = []
 
-all_docs = list_documents()
 doc_map = {doc["filename"]: doc["doc_id"] for doc in all_docs}
 
 with st.sidebar:
@@ -78,9 +81,19 @@ else:
         history_questions = "\n".join(
             f"User: {hist['user']}" for hist in st.session_state.history[-4:]
         )
-
-        result = ask(prompt, doc_id=doc_id, chat_history=history_questions)
-
+        payload = {
+            "message": prompt,
+            "doc_id": doc_id,
+            "chat_history": history_questions
+        }
+        
+        try:
+            result = asyncio.run(send_message(payload))
+        except Exception as e:
+            import traceback
+            st.code(traceback.format_exc())
+            st.stop()
+            
         response = result["answer"]
         rewritten_question = result["rewritten_question"]
         retrieved_chunks = result["docs"]

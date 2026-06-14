@@ -1,9 +1,10 @@
+from pypdf import PdfReader
 from ..schema.documents import Document, DocumentDetail
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from app.core.exceptions import DocumentAlreadyIndexedError, DocumentIndexingError, DocumentNotFoundError, DuplicateDocumentError
 from app.services.documents import remove_document, upload_document
 from app.storage.library import list_documents, get_doc
-router =  APIRouter(prefix="/documents", tags=["documents"])
+router =  APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
 # upload and index documents
 @router.post("/upload", status_code=status.HTTP_201_CREATED, response_model=dict)
@@ -36,9 +37,9 @@ async def upload_documents(file: UploadFile  = File()):
           await file.close() #close file
      return { #return if it is successfully indexed
           "success": True,
-          "doc_id": indexed["doc_id"],
-          "filename": indexed["filename"],
-          "indexed": indexed["indexed"]
+          "doc_id": indexed["doc_id"], #id
+          "filename": indexed["filename"], #name
+          "indexed": indexed["indexed"] #  boolean if it is indexed or not
      }
      
 @router.get("/", status_code=status.HTTP_200_OK, response_model=list[Document])
@@ -49,8 +50,16 @@ async def documents():
 async def specific_document(doc_id: str):
      try:
           document = get_doc(doc_id)
+          with open(document.get("path"), "rb") as f:
+               reader = PdfReader(f)
+               pages = len(reader.pages)
+               text = reader.pages[0].extract_text() or ""
+          document["pages"] = pages
+          document["text"] = text[:2000]
      except DocumentNotFoundError:
           raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
+     except Exception as e:
+          raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=str(e))
      return document
 
 @router.delete("/{doc_id}", status_code=status.HTTP_200_OK, response_model=dict)

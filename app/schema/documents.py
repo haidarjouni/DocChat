@@ -7,13 +7,15 @@ class Document(BaseModel):
      uploaded_at: str
      
 class DocumentDetail(BaseModel):
-    doc_id: str
-    filename: str
-    file_size: int
-    uploaded_at: datetime
+     doc_id: str
+     filename: str
+     file_size: int
+     uploaded_at: datetime
 
-    chunk_count: int
-    indexed_status: str
+     chunk_count: int
+     indexed_status: str
 
-    last_index_attempt: str | None
-    index_error: str | None
+     last_index_attempt: str | None
+     index_error: str | None
+     pages: int
+     text: str
