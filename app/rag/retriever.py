@@ -1,4 +1,4 @@
-from ..core import chromadb
+from ..storage.vectorstore import get_vectorStore
 # import cohere
 # from .. import config
 # cohere_client = cohere.Client(config.COHERE_API_KEY)
@@ -11,7 +11,7 @@ def retriever_query(input: dict):
      return docs
 
 def retriever(question, doc_id=None, k=3):
-     client = chromadb.get_vectorStore() #get the vector store client
+     client = get_vectorStore() #get the vector store client
      search_kwargs = {
           "k": k
      }

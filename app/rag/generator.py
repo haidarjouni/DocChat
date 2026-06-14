@@ -1,5 +1,5 @@
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_core.runnables import RunnableLambda
 from langchain_ollama import ChatOllama
 
 from .retriever import retriever_query
@@ -35,9 +35,18 @@ def ask(user_question, doc_id=None, chat_history=None):
           "context": context,
           "question": rewritten_question    
      })
-     
+ 
      return {
           "rewritten_question": rewritten_question,
           "answer": answer,
-          "docs": docs,        
+          "docs": serialize_docs(docs),        
      }
+     
+def serialize_docs(documents) -> list[dict]:
+     return [
+          {
+               "content": doc.page_content,
+               "page": doc.metadata.get("page", "Unkown"),
+               "filename": doc.metadata.get("filename", "Unkown") # metadata is dict that how u work with dict
+          } for doc in documents
+     ]
