@@ -22,7 +22,7 @@ Upload, view, preview, and manage indexed PDF documents.
 
 Ask questions about a selected document and receive grounded answers with citations.
 
-![Chat Interface](assets/image-1.png)
+![Chat Interface](assets/chat-interface.png)
 
 ### Retrieval Debugger
 
