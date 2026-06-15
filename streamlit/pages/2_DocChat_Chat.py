@@ -1,13 +1,19 @@
+import asyncio
+import traceback
+
 import httpx
 import streamlit as st
-import asyncio
+
 from services.api_client import fetch_documents, send_message
+
 st.set_page_config(
     page_title="DocChat ChatBot",
     page_icon="💬",
     layout="wide",
 )
 
+
+# Small debugging dialog used to inspect what the retriever actually returned.
 @st.dialog("Debug")
 def popup(question, retrieved_chunks):
     st.write("Debugger for this question")
@@ -31,15 +37,23 @@ def popup(question, retrieved_chunks):
 st.title("DocChat")
 st.caption("Ask questions about your uploaded documents.")
 
+# Keep chat messages in Streamlit session state so they survive reruns.
 if "history" not in st.session_state:
     st.session_state.history = []
+
+
+# Fetch available documents from the backend.
+# If the API is down, the page should still render instead of crashing.
 try:
     all_docs = asyncio.run(fetch_documents())
 except Exception as e:
     st.error(f"Error occurred while fetching documents: {e}")
     all_docs = []
 
+
+# Map filenames to document IDs for the selectbox.
 doc_map = {doc["filename"]: doc["doc_id"] for doc in all_docs}
+
 
 with st.sidebar:
     st.header("Documents")
@@ -52,16 +66,18 @@ with st.sidebar:
         selected_doc = st.selectbox(
             "Select a document to chat with:",
             options=list(doc_map.keys()),
-            index=0
+            index=0,
         )
         doc_id = doc_map[selected_doc]
         st.success(f"Document '{selected_doc}' selected.")
+
 
 if not doc_map:
     st.info("Go to the Uploader page and add a document first.")
     st.chat_input("Ask a question about the document:", disabled=True)
 
 else:
+    # Replay previous messages on every Streamlit rerun.
     for i, hist in enumerate(st.session_state.history):
         with st.chat_message("user"):
             st.markdown(hist["user"])
@@ -69,6 +85,7 @@ else:
         with st.chat_message("assistant"):
             st.markdown(hist["assistant"])
 
+            # Expose retrieved chunks per answer so retrieval quality can be inspected.
             if hist.get("docs"):
                 if st.button("Debug", key=f"debug_{i}"):
                     popup(hist["user"], hist["docs"])
@@ -79,39 +96,46 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        # Send only recent history to keep rewriting focused and payloads small.
         history_questions = "\n".join(
             f"User: {hist['user']}" for hist in st.session_state.history[-4:]
         )
+
         payload = {
             "message": prompt,
             "doc_id": doc_id,
-            "chat_history": history_questions
+            "chat_history": history_questions,
         }
         
         try:
             result = asyncio.run(send_message(payload))
+
         except httpx.HTTPStatusError as e:
             st.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
             st.stop()
+
         except httpx.ReadTimeout:
             st.error("The answer took too long to generate. Try again or use a smaller model.")
             st.stop()
-        except Exception as e:
-            import traceback
+
+        except Exception:
+            # Show the traceback during development so backend/frontend issues are easier to debug.
             st.code(traceback.format_exc())
             st.stop()
         
         response = result["answer"]
         rewritten_question = result["rewritten_question"]
         retrieved_chunks = result["docs"]
-        print ()
+
         with st.chat_message("assistant"):
             st.markdown(response)
 
+        # Store the rewritten question because it is the actual query used for retrieval.
         st.session_state.history.append({
             "user": rewritten_question,
             "assistant": response,
             "docs": retrieved_chunks,
         })
 
+        # Rerun so the new message becomes part of the rendered chat history.
         st.rerun()
