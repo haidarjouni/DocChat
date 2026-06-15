@@ -2,17 +2,17 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.core.config import CHUNK_OVERLAP, CHUNK_SIZE
 from app.core.exceptions import DocumentNotFoundError, DocumentAlreadyIndexedError, DocumentIndexingError
-from ..storage import library
+from ..storage import manifest_store
 from ..storage.vectorstore import delete_doc as delete_vectors, add_chunks
 from datetime import datetime
 def index_pdf(doc_id):
-     manifest = library.load_manifest() #load the manifest
+     manifest = manifest_store.load_manifest() #load the manifest
      document = manifest["documents"].get(doc_id) #get the document using the doc_id
      if document is None :
           raise DocumentNotFoundError() #if the document doesn't exist or already indexed just return
      elif document.get("indexed_status") == "ok" and document.get("chunk_count", 0) > 0: #if already indexed do nothing
           raise DocumentAlreadyIndexedError()
-     library.update_doc(doc_id, {
+     manifest_store.update_doc(doc_id, {
         "indexed_status": "indexing",
         "last_index_attempt": datetime.now().isoformat(),
         "index_error": None
@@ -22,14 +22,14 @@ def index_pdf(doc_id):
           chunks = split_chunks(pages) #split it into chunks     
           delete_vectors(doc_id) #delete the old chunks if they exist
           add_chunks(chunks) # add the chunks to the vector store
-          library.update_doc(doc_id, {
+          manifest_store.update_doc(doc_id, {
                "chunk_count": len(chunks),
                "indexed_status": "ok",
                "indexed_at": datetime.now().isoformat(),
                "index_error": None
           })
      except Exception as e:
-          library.update_doc(doc_id, {
+          manifest_store.update_doc(doc_id, {
                "indexed_status": "failed",
                "index_error": str(e),
                "last_index_attempt": datetime.now().isoformat()

@@ -1,6 +1,6 @@
-from ..storage.library import add_upload
+from ..storage.manifest_store import add_upload
 from ..rag.indexer import index_pdf
-from ..storage.library import delete_doc as remove_from_library
+from ..storage.manifest_store import delete_doc as remove_from_library
 from ..storage.vectorstore import delete_doc as remove_from_vectorstore
 def upload_document(filename, file_bytes):
      doc_id = add_upload(filename, file_bytes) #add the document to the library and get the doc_id

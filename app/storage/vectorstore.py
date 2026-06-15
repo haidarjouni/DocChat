@@ -1,7 +1,7 @@
 from langchain_chroma import Chroma
 from app.core.config import CHROMA_DIR, EMBEDDING_MODEL
 from langchain_ollama import OllamaEmbeddings
-from . import library
+from . import manifest_store
 
 ollama_ef = OllamaEmbeddings(
     model="embeddinggemma:latest"
@@ -19,7 +19,7 @@ def add_chunks(chunks:list):
 
 def delete_doc(doc_id):
      client = get_vectorStore()
-     chunk_count = library.get_chunk_count(doc_id) #gets the counter
+     chunk_count = manifest_store.get_chunk_count(doc_id) #gets the counter
      if chunk_count == 0:
           return True #if no chunks indexed just return
      chunk_ids = [f"{doc_id}_chunk_{i}" for i in range(chunk_count)] # generate chunk ids in a list

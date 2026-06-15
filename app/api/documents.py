@@ -3,11 +3,11 @@ from ..schema.documents import Document, DocumentDetail
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from app.core.exceptions import DocumentAlreadyIndexedError, DocumentIndexingError, DocumentNotFoundError, DuplicateDocumentError
 from app.services.documents import remove_document, upload_document
-from app.storage.library import list_documents, get_doc
+from app.storage.manifest_store import list_documents, get_doc
 router =  APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
 # upload and index documents
-@router.post("/upload", status_code=status.HTTP_201_CREATED, response_model=dict)
+@router.post("/upload/", status_code=status.HTTP_201_CREATED, response_model=dict)
 async def upload_documents(file: UploadFile  = File()):
      if file is None:
           raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No file uploaded.")

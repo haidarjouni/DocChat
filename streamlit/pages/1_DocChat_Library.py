@@ -13,7 +13,7 @@ def view(doc_id: str):
     try:
         doc = asyncio.run(get_specific_document(doc_id))
     except httpx.HTTPStatusError as e:
-        st.error(f"status {e.response.status_code}: {e.response.text}")
+        st.error(f"status {e.response.status_code}: {str(e)}")
         st.stop()
     except Exception as e:
         st.error(f"Failed to fetch document: {e}")
@@ -47,7 +47,7 @@ with st.sidebar:
             st.session_state.uploader_key += 1
             st.rerun()
         except httpx.HTTPStatusError as e:
-            st.error(f"status {e.response.status_code}: {e.response.text}")
+            st.error(f"status {e.response.status_code}: {str(e)}")
         except Exception as e:
             st.error(f"Upload failed: {e}")
             
