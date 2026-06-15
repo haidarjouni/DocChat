@@ -1,3 +1,4 @@
+import httpx
 import streamlit as st
 import asyncio
 from services.api_client import fetch_documents, send_message
@@ -89,15 +90,21 @@ else:
         
         try:
             result = asyncio.run(send_message(payload))
+        except httpx.HTTPStatusError as e:
+            st.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
+            st.stop()
+        except httpx.ReadTimeout:
+            st.error("The answer took too long to generate. Try again or use a smaller model.")
+            st.stop()
         except Exception as e:
             import traceback
             st.code(traceback.format_exc())
             st.stop()
-            
+        
         response = result["answer"]
         rewritten_question = result["rewritten_question"]
         retrieved_chunks = result["docs"]
-
+        print ()
         with st.chat_message("assistant"):
             st.markdown(response)
 

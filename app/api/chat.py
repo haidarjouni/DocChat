@@ -16,6 +16,8 @@ async def message(message: MessageRequest):
                doc_id=message.doc_id,
                chat_history=message.chat_history
           )
+     except HTTPException:
+          raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Couldn't reach Ollama")
      except Exception as e:
           raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
      
